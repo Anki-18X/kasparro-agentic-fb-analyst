@@ -1,0 +1,39 @@
+from langchain_openai import ChatOpenAI
+from langchain.prompts import PromptTemplate
+import json
+import yaml
+
+with open('config/config.yaml', 'r') as f:
+    config = yaml.safe_load(f)
+
+llm = ChatOpenAI(model=config['llm_model'], api_key=config['api_key'])
+
+def planner_agent(query: str) -> dict:
+    with open('prompts/planner_prompt.md', 'r') as f:
+        prompt_text = f.read()
+    prompt = PromptTemplate.from_template(prompt_text + "\nQuery: {query}")
+    chain = prompt | llm
+    response = chain.invoke({"query": query})
+    return json.loads(response.content)
+
+For Data Agent, use pandas:
+Python# src/agents/data_agent.py
+import pandas as pd
+
+def data_agent() -> dict:
+    path = config['data_path'] if not config['use_sample'] else 'data/sample_fb_ads.csv'
+    df = pd.read_csv(path)
+    # Summarize
+    roas_trend = df.groupby('date')['roas'].mean().to_dict()
+    low_ctr = df[df['ctr'] < config['thresholds']['low_ctr']]['campaign_name'].unique().tolist()
+    return {"summary": {"roas_trend": roas_trend, "low_ctr_campaigns": low_ctr}}
+For Evaluator, use numpy for stats:
+Pythonimport numpy as np
+
+def evaluator_agent(hypotheses: list, data_summary: dict) -> dict:
+    # Example validation
+    ctr = [...]  # Extract from summary
+    roas = [...]
+    corr = np.corrcoef(ctr, roas)[0,1]
+    # ... more logic
+    return {"validations": [...]}
