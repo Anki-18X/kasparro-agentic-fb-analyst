@@ -1,2 +1,12 @@
 # kasparro-agentic-fb-analyst
-Kasparro's Agentic Facebook Performance Analyst assignment tasks Applied AI Engineers to build a multi-agent system for diagnosing FB Ads ROAS fluctuations, identifying drivers like audience fatigue, and generating data-grounded creative ideas for low-CTR campaigns.
+
+The Kasparro Applied AI Engineer Assignment is a project to design and build a multi-agent AI system for autonomously analyzing Facebook Ads performance in an eCommerce context. The system must diagnose ROAS (Return on Ad Spend) fluctuations over time, identify underlying drivers such as audience fatigue or creative underperformance, and generate new creative ideas (e.g., headlines, messages, CTAs) for low-CTR campaigns, grounded in provided synthetic dataset insights.
+
+Key components include:
+
+Agents: Planner (decomposes queries), Data (loads/summarizes data), Insight (generates hypotheses), Evaluator (validates quantitatively), and Creative Generator (produces improvements).
+Data: Synthetic Facebook Ads CSV with columns like campaign_name, spend, impressions, CTR, ROAS, creative_message, etc.
+Guidelines: Structured prompts with JSON/Markdown outputs, reasoning steps (Think-Analyze-Conclude), and reflection/retry logic.
+Deliverables: Agent graph diagram, orchestration script (run.py), JSON outputs for insights/creatives, report.md, and logs.
+Evaluation: Focuses on agentic architecture (30%), insight quality (25%), validation (20%), prompt robustness (15%), and creative ideas (10%). Timeboxed to 8-10 hours.
+Submission: Public GitHub repo with specific structure (e.g., README.md, src/agents, prompts/), reproducibility (seeds, pinned versions), and git hygiene (commits, PR, tag).
