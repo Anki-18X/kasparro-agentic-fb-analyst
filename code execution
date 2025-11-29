@@ -1,0 +1,141 @@
+import pandas as pd
+import numpy as np
+from scipy.stats import ttest_ind
+
+df = pd.read_csv('synthetic_fb_ads_undergarments.csv')
+
+# Previous cleaning
+df['date'] = pd.to_datetime(df['date'], errors='coerce')
+df = df.dropna(subset=['date'])
+df['spend'] = pd.to_numeric(df['spend'], errors='coerce').fillna(0)
+df['impressions'] = pd.to_numeric(df['impressions'], errors='coerce').fillna(0)
+df['clicks'] = pd.to_numeric(df['clicks'], errors='coerce').fillna(0)
+df['ctr'] = pd.to_numeric(df['ctr'], errors='coerce').fillna(0)
+df['purchases'] = pd.to_numeric(df['purchases'], errors='coerce').fillna(0)
+df['revenue'] = pd.to_numeric(df['revenue'], errors='coerce').fillna(0)
+df['roas'] = pd.to_numeric(df['roas'], errors='coerce').fillna(0)
+df['campaign_name'] = df['campaign_name'].str.lower().str.replace(r'[^a-z0-9 ]', '', regex=True).str.strip()
+# Expand normalization
+campaign_map = {
+    'men comfortmax lunch': 'men comfortmax launch',
+    'men comfortax launch': 'men comfortmax launch',
+    'men comfort max launch': 'men comfortmax launch',
+    'mencomfortmaxlaunch': 'men comfortmax launch',
+    'men comfortma launch': 'men comfortmax launch',
+    'men comfortmax lauch': 'men comfortmax launch',
+    # Women seamless
+    'women seamless eve yday': 'women seamless everyday',
+    'womenseamlesseverday': 'women seamless everyday',
+    'women seamess everyday': 'women seamless everyday',
+    'women seam ess everyday': 'women seamless everyday',
+    'women seamless everday': 'women seamless everyday',
+    'women s amless everyday': 'women seamless everyday',
+    'women semless everyday': 'women seamless everyday',
+    'women seamless ev ryday': 'women seamless everyday',
+    'womenseamlesseveryday': 'women seamless everyday',
+    'women seamless eeryday': 'women seamless everyday',
+    'women  eamless  everyday': 'women seamless everyday',
+    'women  seamless everyday': 'women seamless everyday',
+    'wmen seamless everyday': 'women seamless everyday',
+    'women seamless everydy': 'women seamless everyday',
+    'womenseamless everyday': 'women seamless everyday',
+    'women  seamles   everyday': 'women seamless everyday',
+    'woen seamless everyday': 'women seamless everyday',
+    'women eamless everyday': 'women seamless everyday',
+    # Add more for other campaigns based on unique values
+}
+df['campaign_name'] = df['campaign_name'].replace(campaign_map)
+
+# ROAS by campaign
+campaign_roas = df.groupby('campaign_name')['roas'].mean().sort_values(ascending=False).to_dict()
+
+# CTR over time for low performers
+low_ctr_df = df[df['ctr'] < 0.01]
+ctr_trend = df.groupby('date')['ctr'].mean().to_dict()
+
+# Hypothesis 1: Audience fatigue - check ROAS decline for repeated audiences
+broad_roas = df[df['audience_type'] == 'Broad']['roas'].mean()
+lookalike_roas = df[df['audience_type'] == 'Lookalike']['roas'].mean()
+retarget_roas = df[df['audience_type'] == 'Retargeting']['roas'].mean()
+
+# T-test for significance, e.g., Broad vs Retargeting
+broad_data = df[df['audience_type'] == 'Broad']['roas']
+retarget_data = df[df['audience_type'] == 'Retargeting']['roas']
+t_stat, p_val = ttest_ind(broad_data, retarget_data, nan_policy='omit')
+
+# Creative performance
+creative_ctr = df.groupby('creative_message')['ctr'].mean().sort_values().head(10).to_dict()  # Lowest CTR
+
+# Country/Platform impact
+country_roas = df.groupby('country')['roas'].mean().to_dict()
+platform_roas = df.groupby('platform')['roas'].mean().to_dict()
+
+print({
+    'campaign_roas': campaign_roas,
+    'ctr_trend_sample': dict(list(ctr_trend.items())[:10]),
+    'audience_roas': {'Broad': broad_roas, 'Lookalike': lookalike_roas, 'Retargeting': retarget_roas},
+    't_test_audience': {'t_stat': t_stat, 'p_val': p_val},
+    'low_creatives_ctr': creative_ctr,
+    'country_roas': country_roas,
+    'platform_roas': platform_roas
+})
+
+import pandas as pd
+import numpy as np
+
+df = pd.read_csv('synthetic_fb_ads_undergarments.csv')
+
+# Clean data
+df['date'] = pd.to_datetime(df['date'], errors='coerce')
+df = df.dropna(subset=['date'])  # Drop invalid dates
+df['spend'] = pd.to_numeric(df['spend'], errors='coerce').fillna(0)
+df['impressions'] = pd.to_numeric(df['impressions'], errors='coerce').fillna(0)
+df['clicks'] = pd.to_numeric(df['clicks'], errors='coerce').fillna(0)
+df['ctr'] = pd.to_numeric(df['ctr'], errors='coerce').fillna(0)
+df['purchases'] = pd.to_numeric(df['purchases'], errors='coerce').fillna(0)
+df['revenue'] = pd.to_numeric(df['revenue'], errors='coerce').fillna(0)
+df['roas'] = pd.to_numeric(df['roas'], errors='coerce').fillna(0)
+
+# Normalize campaign names (e.g., standardize variations)
+df['campaign_name'] = df['campaign_name'].str.lower().str.replace(r'[^a-z0-9 ]', '', regex=True).str.strip()
+df['campaign_name'] = df['campaign_name'].replace({
+    'men comfortmax lunch': 'men comfortmax launch',
+    'men comfortax launch': 'men comfortmax launch',
+    'men comfort max launch': 'men comfortmax launch'
+    # Add more normalizations if needed from data
+})
+
+# Summary: ROAS over time (monthly average)
+df['month'] = df['date'].dt.to_period('M')
+monthly_roas = df.groupby('month')['roas'].mean().to_dict()
+
+# Overall stats
+total_spend = df['spend'].sum()
+total_revenue = df['revenue'].sum()
+avg_roas = total_revenue / total_spend if total_spend > 0 else 0
+roas_trend = df.groupby('date')['roas'].mean().reset_index().to_dict('records')
+
+# Find ROAS fluctuations: std dev per month
+monthly_std = df.groupby('month')['roas'].std().to_dict()
+
+# Low CTR campaigns (threshold 0.01)
+low_ctr_campaigns = df[df['ctr'] < 0.01]['campaign_name'].unique().tolist()
+
+# Correlations
+corr_ctr_roas = df['ctr'].corr(df['roas'])
+corr_spend_roas = df['spend'].corr(df['roas'])
+
+# Top performing creatives (by ROAS)
+top_creatives = df.groupby('creative_message')['roas'].mean().sort_values(ascending=False).head(5).to_dict()
+
+# Print summaries
+print({
+    'monthly_roas': monthly_roas,
+    'avg_roas': avg_roas,
+    'roas_trend': roas_trend[:10],  # Sample
+    'monthly_std': monthly_std,
+    'low_ctr_campaigns': low_ctr_campaigns,
+    'corr_ctr_roas': corr_ctr_roas,
+    'corr_spend_roas': corr_spend_roas,
+    'top_creatives': top_creatives
+})
