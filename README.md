@@ -10,3 +10,20 @@ Guidelines: Structured prompts with JSON/Markdown outputs, reasoning steps (Thin
 Deliverables: Agent graph diagram, orchestration script (run.py), JSON outputs for insights/creatives, report.md, and logs.
 Evaluation: Focuses on agentic architecture (30%), insight quality (25%), validation (20%), prompt robustness (15%), and creative ideas (10%). Timeboxed to 8-10 hours.
 Submission: Public GitHub repo with specific structure (e.g., README.md, src/agents, prompts/), reproducibility (seeds, pinned versions), and git hygiene (commits, PR, tag).
+
+# Kasparro Agentic FB Analyst
+
+Setup: `./run.sh setup`
+
+Data: Place full CSV in data/ or use sample. Edit config.yaml.
+
+Commands: `./run.sh run 'Analyze ROAS drop'`
+
+Architecture: See agent_graph.md
+
+Validation: Evaluator uses stats (corr, t-tests) with confidence; retries if low.
+
+Example Outputs:
+- insights.json: Hypotheses with evidence.
+- creatives.json: New ideas.
+- report.md: Summary.
