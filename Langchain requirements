@@ -1,0 +1,24 @@
+# Langchain req
+langchain==0.0.352
+langchain-openai==0.0.2  # Or langchain-groq if using Grok
+langgraph==0.0.14
+langfuse==2.0.0  # For traces
+pandas==2.1.4
+numpy==1.26.2
+pytest==7.4.3
+black==23.11.0
+flake8==6.1.0
+pyyaml==6.0.1
+
+config/config.yaml (thresholds, paths, seeds):
+YAMLdata_path: data/sample_fb_ads.csv  # Or full path to real CSV
+use_sample: true  # Flag to switch full/sample
+seed: 42  # For randomness (e.g., synthetic data gen)
+llm_model: gpt-4  # Or grok-beta
+api_key: your-openai-or-grok-key
+thresholds:
+  low_ctr: 0.01  # Example: CTR below this triggers creative gen
+  confidence_low: 0.5  # For reflection/retry
+langfuse:
+  project_id: your-langfuse-project
+  secret_key: your-langfuse-secret
