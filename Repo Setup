@@ -1,0 +1,44 @@
+#!/bin/bash
+
+# Setup
+setup() {
+  pip install -r requirements.txt
+}
+
+# Run
+run() {
+  python run.py "$@"
+}
+
+# Test
+test() {
+  pytest tests/
+}
+
+# Lint
+lint() {
+  black src/ run.py
+  flake8 src/ run.py
+}
+
+case "$1" in
+  setup) setup ;;
+  run) shift; run "$@" ;;
+  test) test ;;
+  lint) lint ;;
+  *) echo "Usage: ./run.sh [setup|run <query>|test|lint]" ;;
+esac
+
+
+
+data_path: data/sample_fb_ads.csv  # Or full path to real CSV
+use_sample: true  # Flag to switch full/sample
+seed: 42  # For randomness (e.g., synthetic data gen)
+llm_model: gpt-4  # Or grok-beta
+api_key: your-openai-or-grok-key
+thresholds:
+  low_ctr: 0.01  # Example: CTR below this triggers creative gen
+  confidence_low: 0.5  # For reflection/retry
+langfuse:
+  project_id: your-langfuse-project
+  secret_key: your-langfuse-secret
