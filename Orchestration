@@ -1,0 +1,97 @@
+Use LangGraph for the workflow.
+src/orchestrator/graph.py:
+Pythonfrom langgraph.graph import StateGraph, END
+from typing import TypedDict, Annotated, List
+import operator
+
+class AgentState(TypedDict):
+    query: str
+    subtasks: List[dict]
+    data_summary: dict
+    hypotheses: List[dict]
+    validations: List[dict]
+    recommendations: List[dict]
+
+def planner_node(state):
+    state['subtasks'] = planner_agent(state['query'])
+    return state
+
+def data_node(state):
+    state['data_summary'] = data_agent()
+    return state
+
+def insight_node(state):
+    # Use LLM with data_summary
+    prompt = ...  # Load and format with state['data_summary']
+    state['hypotheses'] = ...  # LLM call
+    return state
+
+def evaluator_node(state):
+    state['validations'] = evaluator_agent(state['hypotheses'], state['data_summary'])
+    # Reflection: If low conf, route back to insight
+    if any(v['confidence'] < config['thresholds']['confidence_low'] for v in state['validations']):
+        return "insight_node"  # Retry
+    return state
+
+def creative_node(state):
+    state['recommendations'] = creative_agent(state['data_summary']['low_ctr_campaigns'], state['data_summary'])
+    return state
+
+graph = StateGraph(AgentState)
+graph.add_node("planner", planner_node)
+graph.add_node("data", data_node)
+graph.add_node("insight", insight_node)
+graph.add_node("evaluator", evaluator_node)
+graph.add_node("creative", creative_node)
+
+# Edges: planner -> data -> insight -> evaluator (conditional loop) -> creative -> end
+graph.add_edge("planner", "data")
+graph.add_edge("data", "insight")
+graph.add_edge("insight", "evaluator")
+graph.add_conditional_edges("evaluator", lambda state: "insight" if needs_retry else "creative")
+graph.add_edge("creative", END)
+
+app = graph.compile()
+run.py (CLI):
+Pythonimport sys
+import json
+from src.orchestrator.graph import app
+from src.utils.logger import setup_logger  # Implement simple JSON logger
+import langfuse  # For traces
+
+logger = setup_logger()
+
+def main(query: str):
+    state = {"query": query}
+    final_state = app.invoke(state)
+    
+    # Outputs
+    with open('reports/insights.json', 'w') as f:
+        json.dump({"hypotheses": final_state['hypotheses'], "validations": final_state['validations']}, f)
+    with open('reports/creatives.json', 'w') as f:
+        json.dump({"recommendations": final_state['recommendations']}, f)
+    
+    # report.md
+    with open('reports/report.md', 'w') as f:
+        f.write("# FB Ads Report\n")
+        f.write(f"Query: {query}\n")
+        # Summarize hypotheses, etc.
+    
+    # Logs: Use langfuse.trace() around nodes for traces
+    # ...
+
+if __name__ == "__main__":
+    query = sys.argv[1] if len(sys.argv) > 1 else "Analyze ROAS drop"
+    main(query)
+7. Logging and Observability (src/utils/logger.py)
+Simple JSON logs + Langfuse.
+Pythonimport logging
+import json
+
+def setup_logger():
+    logging.basicConfig(filename='logs/agent.log', level=logging.INFO, 
+                        format='%(asctime)s %(message)s')
+    return logging.getLogger()
+
+# In agents: logger.info(json.dumps({"agent": "planner", "output": ...}))
+For Langfuse: Wrap LLM calls with langfuse.trace().
