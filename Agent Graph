@@ -1,0 +1,31 @@
+# Agent Graph: Multi-Agent System for FB Ads Analysis
+
+## Diagram (ASCII Art)
+User Query --> Planner Agent --> Subtasks
+                          |
+                          v
+Data Agent <--> Insight Agent <--> Evaluator Agent
+                          |
+                          v
+Creative Improvement Generator
+                          |
+                          v
+Outputs: insights.json, creatives.json, report.md
+
+Data Flow:
+- Planner decomposes query (e.g., 'Analyze ROAS drop') into subtasks like 'Load data', 'Generate hypotheses', 'Validate', 'Generate creatives'.
+- Data Agent loads/summarizes CSV (uses pandas for aggregation, e.g., ROAS trends by date/campaign).
+- Insight Agent hypothesizes drivers (e.g., 'Audience fatigue in US' based on CTR drop).
+- Evaluator validates quantitatively (e.g., stats tests on data) with confidence; reflects/retries if low.
+- Creative Generator proposes new messages for low-CTR campaigns, grounded in existing creatives.
+- Orchestrator (LangGraph) manages loop: Planner -> Data/Insight -> Evaluator (retry if needed) -> Creative.
+- State: Shared memory (LangGraph state) for data summaries and insights; optional short-term memory via JSON cache.
+
+Roles:
+- Planner: Decomposes, plans sequence.
+- Data: Loads, summarizes (e.g., mean ROAS by period).
+- Insight: Hypothesizes patterns (Think-Analyze-Conclude).
+- Evaluator: Quant checks (e.g., correlation), confidence scoring.
+- Creative: Generates diverse ideas (JSON output).
+
+This forms a Planner-Evaluator loop for robustness, with generation at the end.
